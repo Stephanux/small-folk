@@ -1,0 +1,32 @@
+{
+	"GET/getdata/countries": {
+		"sql" : "select * from countries",
+		"view": "tableau_html.hbs"
+	},
+	"GET/setdata/countries": {
+		"sql" : "insert into countries (`code`, `name_us`, `name_fr`) values (:0, :1, :2)",
+		"view": "tableau_html.hbs"
+	},
+	"POST/setdata/countries": {
+		"sql" : "insert into countries (`code`, `name_us`, `name_fr`) values (:0, :1, :2)",
+		"view": "tableau_html.hbs"
+	},
+	"GET/updatedata/countries": {
+		"sql": "update countries set name_us=:0, name_fr=:1 where code=:2",
+		"view": "tableau_html.hbs"
+	},
+	"GET/deletedata/countries": {
+		"sql": "delete from countries where code = :0",
+		"view": "tableau_html.hbs"
+		
+	},
+	"POST/deletedata/countries": {
+		"sql": "delete from countries where code = :0",
+		"view": "tableau_html.hbs"
+	},
+	"GET/getview/countries": {
+		"view": "form_countries.hbs",
+		"params": [{"title": "Create countries"}],
+		"sql_action": "insert"
+	}
+}

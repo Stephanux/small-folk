@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Liste data</title>
+</head>
+<body>
+    <form method="POST" action="/deletedata/countries">
+        <table border=1>
+            <tbody>{{#each data}}<tr>
+                    <td><input type="radio" value="{{this.code}}" name="code"></td>
+                    <td>{{this.code}}</td>
+                    <td>{{this.name_fr}}</td>
+                    <td>{{this.name_us}}</td>
+                    <td><input type="submit" value="Suppr." name="btn_del_{{this.code}}"></td>
+                </tr>{{/each}}</tbody>
+        </table>
+    </form>
+</body>
+</html>
