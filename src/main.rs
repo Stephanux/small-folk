@@ -1,5 +1,6 @@
 
 mod appdyn;
+mod view;
 
 use std::{
     collections::{hash_map::Entry, HashMap},

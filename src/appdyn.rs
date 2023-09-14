@@ -1,7 +1,7 @@
 mod sql_request_sqlite;
 mod sql_request;
 
-/*Module "appdyn.rs" qui contient le code du lancement du serveur Web avec tide */
+/*Module "appdyn.rs" qui contient le code du lancement du serveur Web avec Tide */
 pub mod appdyn {
     use sqlx::mysql::MySqlPoolOptions;
     use tide::{Body, Request, Response, Server};
@@ -20,11 +20,11 @@ pub mod appdyn {
     pub async fn main() {
         tide::log::start();
         let pool = MySqlPoolOptions::new()
-        .max_connections(7)
-        .connect("mysql://admin:azerty@localhost/greta")
-        .await;
-
+            .max_connections(7)
+            .connect("mysql://admin:azerty@localhost/greta")
+            .await;
         let conn = pool.unwrap().clone();
+
         println!("Connection database {:?}", conn);
         let app = server(&conn).await;
 
@@ -55,11 +55,30 @@ pub mod appdyn {
                 let action = get_action(&_req, "GET/getview/".to_string()).await;
                 // Récupération de la vue via la variable "view" du fichier config_actions.json chargé au démarrage
                 let view = action.get("view").unwrap().as_str().unwrap();
-                let sql_action = action.get("sql_action").unwrap().as_str().unwrap();
+                let form_action = action.get("form_action").unwrap().as_str().unwrap();
                 // problème dans la construction du json, voici le résultat de j :
                 // "\n                {\n                    \"sql_action\": \"\"insert\"\"\n                }"
                 let j = "{ \"sql_action\": \"?\"}";
-                let jsontxt = j.replace('?',sql_action);
+                let jsontxt = j.replace('?',form_action);
+                println!("jsontxt : {:?}", jsontxt);
+                let mut json: Vec<serde_json::Value> = Vec::new();
+                json.push(serde_json::from_str(jsontxt.as_str()).unwrap()); // JSON pas conforme à la norme RFC mais convertible
+                let html = json_to_html(&json, view).unwrap();  // utilsation de handlebars pour tranformation en HTML
+                let mut res = Response::new(200);
+                res.set_content_type("text/html");
+                res.set_body(Body::from_string(html));
+                Ok(res)
+            });
+        app.at("/getupdateview/:view")
+            .get(|mut _req: Request<State>| async move {
+                let action = get_action(&_req, "GET/getupdateview/".to_string()).await;
+                // Récupération de la vue via la variable "view" du fichier config_actions.json chargé au démarrage
+                let view = action.get("view").unwrap().as_str().unwrap();
+                let form_action = action.get("form_action").unwrap().as_str().unwrap();
+                // problème dans la construction du json, voici le résultat de j :
+                // "\n                {\n                    \"sql_action\": \"\"insert\"\"\n                }"
+                let j = "{ \"sql_action\": \"?\"}";
+                let jsontxt = j.replace('?',form_action);
                 println!("jsontxt : {:?}", jsontxt);
                 let mut json: Vec<serde_json::Value> = Vec::new();
                 json.push(serde_json::from_str(jsontxt.as_str()).unwrap()); // JSON pas conforme à la norme RFC mais convertible
@@ -77,9 +96,18 @@ pub mod appdyn {
                 let sql_query = serde_json::Value::as_str(action.get("sql").unwrap()).unwrap();
                 let view = serde_json::Value::as_str(action.get("view").unwrap()).unwrap();
                 let response = get_data(&_req.state().pool, &sql_query.to_string()).await;
+                // Traite l'erreur possible en retour de la function get_data() via "is_ok()"" de response de type Result.
                 let mut json: Vec<serde_json::Value> = Vec::new();
-                for row in response.unwrap() {
-                    json.push(serde_json::from_str(&row).unwrap()); // JSON pas conforme à la norme RFC mais convertible
+                if response.is_ok() {
+                    for row in response.unwrap() {
+                        json.push(serde_json::from_str(&row).unwrap()); // JSON pas conforme à la norme RFC mais convertible
+                    }
+                } else {
+                    let mut j: String = String::new();
+                    j.push_str("{ \"Error\": \"Database Error\", \"sql_query\": \"");
+                    j.push_str(&format!("{}", sql_query));
+                    j.push_str("\" }");
+                    json.push(serde_json::from_str(j.as_str()).unwrap());
                 }
                 // afficher le retour du parsing handlabars sur la Sortie std
                 let html = json_to_html(&json, view).unwrap();  // utilsation de handlebars pour tranformatin en HTML
@@ -149,8 +177,8 @@ pub mod appdyn {
                 let action = get_action(&_req, "GET/updatedata/".to_string()).await;
                 // convertir le String(....) en str avec : serde_json::Value::as_str(action.get("sql").unwrap())
                 let sql_query = action.get("sql").unwrap().as_str().unwrap();
-                let body =_req.body_string().await?;
-                let url_params = body.split('&')
+                //let body =_req.body_string().await?;
+                let url_params = _req.url().query().unwrap().split('&')
                 .filter_map(|s| {
                     s.split_once('=')
                         .and_then(|t| Some((decode(t.0.to_owned().as_str()).unwrap(), decode(t.1.to_owned().replace("+", " ").as_str()).unwrap())))
@@ -176,7 +204,7 @@ pub mod appdyn {
                 // convertir le String(....) en str avec : serde_json::Value::as_str(action.get("sql").unwrap())
                 let sql_query =action.get("sql").unwrap().as_str().unwrap();
                 let body =_req.body_string().await?;
-                let url_params = body.split('&')
+                let url_params = _req.url().query().unwrap().split('&')
                 .filter_map(|s| {
                     s.split_once('=')
                         .and_then(|t| Some((decode(t.0.to_owned().as_str()).unwrap(), decode(t.1.to_owned().replace("+", " ").as_str()).unwrap())))
@@ -224,13 +252,20 @@ pub mod appdyn {
     async fn get_action(_req: &Request<State>, prefix_cle: String) -> serde_json::value::Value{
         // récupération des données de l'URL : pathname + nom table param + sql from config_action.json
         let mut cle = prefix_cle.to_string();
-        if prefix_cle.contains("getview") {
+        println!("cle : {:?}", cle);    
+        if prefix_cle.contains("getview") || prefix_cle.contains("getupdateview") {
             cle.push_str(_req.param("view").unwrap());
         }
         else {
             cle.push_str(_req.param("table").unwrap());
         }
         println!("\n===>cle : {:?}", cle);
-        _req.state().actions.get(&cle).unwrap().clone()
+        if _req.state().actions.get(&cle) == None {
+            let val = _req.state().actions.get("GET/notfound");
+            return val.unwrap().clone();
+        }
+        else {
+            _req.state().actions.get(&cle).unwrap().clone()
+        }
     }
 }

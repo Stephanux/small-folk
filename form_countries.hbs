@@ -1,9 +1,9 @@
 <div>
-    {{#each data}}
-    {{#if (eq "insert" this.sql_action)}}
+    {{#each data}} <!-- trouver le moyen de ne pas parcourir pour accéder aux données -->
+    {{#if (eq "insert" this.form_action)}}
     <form method="POST" action="/setdata/countries">
     {{else}}
-    <form method="POST" action="/update/countries">
+    <form method="GET" action="/updatedata/countries">
     {{/if}}
         <label>Code</label><br>
         <input type="text" name="code" value"{{this.code}}"><br>

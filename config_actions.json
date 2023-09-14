@@ -1,4 +1,9 @@
 {
+	"GET/notfound": {
+		"sql": "",
+		"form_action": "",
+		"view": "error.hbs"
+	},
 	"GET/getdata/countries": {
 		"sql" : "select * from countries",
 		"view": "tableau_html.hbs"
@@ -15,10 +20,13 @@
 		"sql": "update countries set name_us=:0, name_fr=:1 where code=:2",
 		"view": "tableau_html.hbs"
 	},
+	"POST/updatedata/countries": {
+		"sql": "update countries set name_us=:0, name_fr=:1 where code=:2",
+		"view": "tableau_html.hbs"
+	},
 	"GET/deletedata/countries": {
 		"sql": "delete from countries where code = :0",
 		"view": "tableau_html.hbs"
-		
 	},
 	"POST/deletedata/countries": {
 		"sql": "delete from countries where code = :0",
@@ -27,6 +35,11 @@
 	"GET/getview/countries": {
 		"view": "form_countries.hbs",
 		"params": [{"title": "Create countries"}],
-		"sql_action": "insert"
+		"form_action": "insert"
+	},
+	"GET/getupdateview/countries": {
+		"view": "form_countries.hbs",
+		"params": [{"title": "Update countries"}],
+		"form_action": "update"
 	}
 }
