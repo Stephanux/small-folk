@@ -63,7 +63,7 @@ pub mod appdyn {
                 println!("jsontxt : {:?}", jsontxt);
                 let mut json: Vec<serde_json::Value> = Vec::new();
                 json.push(serde_json::from_str(jsontxt.as_str()).unwrap()); // JSON pas conforme à la norme RFC mais convertible
-                let html = json_to_html(&json, view).unwrap();  // utilsation de handlebars pour tranformation en HTML
+                let html = json_to_html(&json, view).unwrap();  // utilisation de handlebars pour transformation en HTML
                 let mut res = Response::new(200);
                 res.set_content_type("text/html");
                 res.set_body(Body::from_string(html));
@@ -110,7 +110,7 @@ pub mod appdyn {
                     json.push(serde_json::from_str(j.as_str()).unwrap());
                 }
                 // afficher le retour du parsing handlabars sur la Sortie std
-                let html = json_to_html(&json, view).unwrap();  // utilsation de handlebars pour tranformatin en HTML
+                let html = json_to_html(&json, view).unwrap();  // utilisation de handlebars pour transformation en HTML
 
                 let mut res = Response::new(200);
                 res.set_content_type("text/html");
