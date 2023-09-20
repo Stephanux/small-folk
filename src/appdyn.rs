@@ -1,13 +1,15 @@
-mod sql_request_sqlite;
+//mod sql_request_sqlite;
 mod sql_request;
+mod view;
 
 /*Module "appdyn.rs" qui contient le code du lancement du serveur Web avec Tide */
 pub mod appdyn {
     use sqlx::mysql::MySqlPoolOptions;
     use tide::{Body, Request, Response, Server};
-    use crate::appdyn::sql_request::sql_request::{get_data, json_to_html};
+    use crate::appdyn::sql_request::sql_request::{get_data};
     extern crate urlencoding;
     use urlencoding::decode;
+    use crate::appdyn::view::view::json_to_html;
     use super::sql_request::sql_request::set_data;
 
     #[derive(Clone, Debug)]
@@ -82,7 +84,7 @@ pub mod appdyn {
                 println!("jsontxt : {:?}", jsontxt);
                 let mut json: Vec<serde_json::Value> = Vec::new();
                 json.push(serde_json::from_str(jsontxt.as_str()).unwrap()); // JSON pas conforme à la norme RFC mais convertible
-                let html = json_to_html(&json, view).unwrap();  // utilsation de handlebars pour tranformatin en HTML
+                let html = json_to_html(&json, view).unwrap();  // utilisation de handlebars pour transformation en HTML
                 let mut res = Response::new(200);
                 res.set_content_type("text/html");
                 res.set_body(Body::from_string(html));
@@ -203,7 +205,7 @@ pub mod appdyn {
                 let action = get_action(&_req, "GET/deletedata/".to_string()).await;
                 // convertir le String(....) en str avec : serde_json::Value::as_str(action.get("sql").unwrap())
                 let sql_query =action.get("sql").unwrap().as_str().unwrap();
-                let body =_req.body_string().await?;
+                let _body =_req.body_string().await?;
                 let url_params = _req.url().query().unwrap().split('&')
                 .filter_map(|s| {
                     s.split_once('=')

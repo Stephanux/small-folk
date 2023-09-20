@@ -79,7 +79,7 @@ pub mod sql_request {
         result.unwrap()
     }
 
-    pub fn json_to_html(data: Vec<Value>) -> Result<String, handlebars::RenderError> {
+   /* pub fn json_to_html(data: Vec<Value>) -> Result<String, handlebars::RenderError> {
         let mut handlebars = Handlebars::new();
         let _resp = handlebars
             .register_template_file("datahbs", "./tableau_html.hbs")
@@ -92,5 +92,5 @@ pub mod sql_request {
             handlebars.render_template("datahbs", &datahbs)
         );
         handlebars.render("datahbs", &datahbs)
-    }
+    }*/
 }
