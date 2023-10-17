@@ -1,5 +1,6 @@
 
 mod appdyn;
+pub mod dynamic_router;
 
 /* Module principal contenant la fonction main de lancement de l'application */
 

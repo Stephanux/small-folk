@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Liste data</title>
+</head>
+<body>
+    <form method="POST" action="/deletedata/communes">
+        <table border=1>
+            <tbody>{{#each data}}<tr>
+                    <td><input type="radio" value="{{this.Code_commune_INSEE}}" name="code"></td>
+                    <td>{{this.Code_commune_INSEE}}</td>
+                    <td>{{this.Nom_de_la_commune}}</td>
+                    <td>{{this.Code_postal}}</td>
+                    <td>{{this.Libelle_d_acheminement}}</td>
+                    <td>{{this.Ligne_5}}</td>
+                    <td><input type="submit" value="Suppr." name="btn_del_{{this.code}}"></td>
+                    
+                </tr>{{/each}}</tbody>
+        </table>
+    </form>
+</body>
+</html>
