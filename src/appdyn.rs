@@ -15,7 +15,7 @@ pub mod appdyn {
     use urlencoding::decode;
 
     #[derive(Clone, Debug)]
-    struct State {
+    pub struct State {
         pool: sqlx::Pool<sqlx::MySql>,
         actions: serde_json::value::Value, //Arc<RwLock<HashMap<String, String>>>,
     }
@@ -26,7 +26,7 @@ pub mod appdyn {
         // Création du pool de connexion à la base SQL
         let pool = MySqlPoolOptions::new()
             .max_connections(7)
-            .connect("mysql://admin:azerty@localhost/greta")
+            .connect("mysql://admin:azerty@localhost/R504TP")
             .await;
         let conn = pool.unwrap().clone();
         println!("Database connected... {:?}", conn);
