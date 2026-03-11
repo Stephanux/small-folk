@@ -7,16 +7,45 @@
 pub mod dynamic_router {
     use tide::{Body, Request, Response, Server};
     extern crate urlencoding;
-    use urlencoding::decode;
     use crate::appdyn;
-    use crate::appdyn::{sql_request::sql_request::get_data, sql_request::sql_request::set_data, view::view::json_to_html};
     use crate::appdyn::appdyn::State;
+    use crate::appdyn::{
+        sql_request::sql_request::get_data, sql_request::sql_request::set_data,
+        view::view::json_to_html,
+    };
+    use urlencoding::decode;
 
-    pub async fn manage_action<'a>(app: &'a mut Server<State>) -> &'a mut Server<appdyn::appdyn::State> {
-        
-
-
+    pub async fn manage_action<'a>(
+        app: &'a mut Server<State>,
+    ) -> &'a mut Server<appdyn::appdyn::State> {
         /* ici on va découper les requêtes et récupérer les données qui arrive du client  */
+        app.at("*").get(|mut _req: Request<State>| async move {
+            let path = _req.url().path();
+            println!("\n===> path : {:?}", path);
+            let url_params = _req
+                .url()
+                .query()
+                .unwrap_or("")
+                .split('&')
+                .filter_map(|s| {
+                    s.split_once('=').and_then(|t| {
+                        Some((
+                            decode(t.0.to_owned().as_str()).unwrap(),
+                            decode(t.1.to_owned().replace("+", " ").as_str()).unwrap(),
+                        ))
+                    })
+                })
+                .collect::<Vec<_>>();
+            println!("\n===> url_params : {:?}", url_params);
+            let body = _req.body_string().await.unwrap_or("".to_string());
+            let methode = _req.method().to_string();
+            println!("\n===> body : {:?} \n===> method : {:?}", body, methode);
+            let mut res = Response::new(200);
+            res.set_content_type("text/html");
+            res.set_body(Body::from_string(methode+_req.url().path()+"?"+url_params.iter().map(|(k,v)| format!("{}={}&", k, v)).collect::<String>().as_str()));
+            Ok(res)
+        });
+
         app.at("/").get(|_| async { Ok("Hello, world!") });
 
         app.at("/getview/:view")
@@ -39,7 +68,7 @@ pub mod dynamic_router {
                 Ok(res)
             });
 
-            app.at("/getdata/:table")
+        app.at("/getdata/:table")
             .get(|mut _req: Request<State>| async move {
                 let action = get_action(&_req, "GET/getdata/".to_string()).await;
                 // convertir le String(....) en str avec : serde_json::Value::as_str(action.get("sql").unwrap())
@@ -60,7 +89,7 @@ pub mod dynamic_router {
                     json.push(serde_json::from_str(j.as_str()).unwrap());
                 }
                 // afficher le retour du parsing handlabars sur la Sortie std
-                let html = json_to_html(&json, view).unwrap();  // utilisation de handlebars pour transformation en HTML
+                let html = json_to_html(&json, view).unwrap(); // utilisation de handlebars pour transformation en HTML
 
                 let mut res = Response::new(200);
                 res.set_content_type("text/html");
@@ -68,17 +97,28 @@ pub mod dynamic_router {
                 Ok(res)
             });
 
-            app.at("/setdata/:table")
+        app.at("/setdata/:table")
             .get(|mut _req: Request<State>| async move {
                 println!("\n===> req.body :dans get");
                 // récupération des données de l'URL : pathname + nom table param + sql from config_action.json
-                println!("\n===> req.query : {:?}", _req.url().query().unwrap().split('&'));
-                let url_params = _req.url().query().unwrap().split('&')
-                .filter_map(|s| {
-                    s.split_once('=')
-                        .and_then(|t| Some((decode(t.0.to_owned().as_str()).unwrap(), decode(t.1.to_owned().replace("+", " ").as_str()).unwrap())))
-                })
-                .collect::<Vec<_>>();
+                println!(
+                    "\n===> req.query : {:?}",
+                    _req.url().query().unwrap().split('&')
+                );
+                let url_params = _req
+                    .url()
+                    .query()
+                    .unwrap()
+                    .split('&')
+                    .filter_map(|s| {
+                        s.split_once('=').and_then(|t| {
+                            Some((
+                                decode(t.0.to_owned().as_str()).unwrap(),
+                                decode(t.1.to_owned().replace("+", " ").as_str()).unwrap(),
+                            ))
+                        })
+                    })
+                    .collect::<Vec<_>>();
                 let mut vec_keys: Vec<String> = Vec::new();
                 println!("\n===> req.query : {:?}", url_params);
                 for p in url_params {
@@ -89,21 +129,29 @@ pub mod dynamic_router {
                 // convertir le String(....) en str avec : serde_json::Value::as_str(action.get("sql").unwrap())
                 let sql_query = serde_json::Value::as_str(action.get("sql").unwrap()).unwrap();
                 let response = set_data(&_req.state().pool, sql_query.to_string(), vec_keys).await;
-                                
+
                 let mut res = Response::new(200);
                 res.set_content_type("text/html");
-                res.set_body(Body::from_string(format!("<H1>{} Row inserted !</H1>", response)));
+                res.set_body(Body::from_string(format!(
+                    "<H1>{} Row inserted !</H1>",
+                    response
+                )));
                 Ok(res)
             })
             .post(|mut _req: Request<State>| async move {
                 // récupération des données de l'URL : pathname + nom table param + sql from config_action.json
-                let body =_req.body_string().await?;
-                let url_params = body.split('&')
-                .filter_map(|s| {
-                    s.split_once('=')
-                        .and_then(|t| Some((decode(t.0.to_owned().as_str()).unwrap(), decode(t.1.to_owned().replace("+", " ").as_str()).unwrap())))
-                })
-                .collect::<Vec<_>>();
+                let body = _req.body_string().await?;
+                let url_params = body
+                    .split('&')
+                    .filter_map(|s| {
+                        s.split_once('=').and_then(|t| {
+                            Some((
+                                decode(t.0.to_owned().as_str()).unwrap(),
+                                decode(t.1.to_owned().replace("+", " ").as_str()).unwrap(),
+                            ))
+                        })
+                    })
+                    .collect::<Vec<_>>();
                 let mut vec_keys: Vec<String> = Vec::new();
                 println!("\n===> params : {:?}", url_params);
                 for p in url_params {
@@ -114,74 +162,104 @@ pub mod dynamic_router {
                 // convertir le String(....) en str avec : serde_json::Value::as_str(action.get("sql").unwrap())
                 let sql_query = action.get("sql").unwrap().as_str().unwrap();
                 let response = set_data(&_req.state().pool, sql_query.to_string(), vec_keys).await;
-                                
+
                 let mut res = Response::new(200);
                 res.set_content_type("text/html");
-                res.set_body(Body::from_string(format!("<H1>{} Row inserted !</H1>", response)));
+                res.set_body(Body::from_string(format!(
+                    "<H1>{} Row inserted !</H1>",
+                    response
+                )));
                 Ok(res)
             });
 
-            app.at("/updatedata/:table")
+        app.at("/updatedata/:table")
             .get(|mut _req: Request<State>| async move {
                 // récupération des données de l'URL : pathname + nom table param + sql from config_action.json
                 let action = get_action(&_req, "GET/updatedata/".to_string()).await;
                 // convertir le String(....) en str avec : serde_json::Value::as_str(action.get("sql").unwrap())
                 let sql_query = action.get("sql").unwrap().as_str().unwrap();
                 //let body =_req.body_string().await?;
-                let url_params = _req.url().query().unwrap().split('&')
-                .filter_map(|s| {
-                    s.split_once('=')
-                        .and_then(|t| Some((decode(t.0.to_owned().as_str()).unwrap(), decode(t.1.to_owned().replace("+", " ").as_str()).unwrap())))
-                })
-                .collect::<Vec<_>>();
+                let url_params = _req
+                    .url()
+                    .query()
+                    .unwrap()
+                    .split('&')
+                    .filter_map(|s| {
+                        s.split_once('=').and_then(|t| {
+                            Some((
+                                decode(t.0.to_owned().as_str()).unwrap(),
+                                decode(t.1.to_owned().replace("+", " ").as_str()).unwrap(),
+                            ))
+                        })
+                    })
+                    .collect::<Vec<_>>();
                 let mut vec_keys: Vec<String> = Vec::new();
                 println!("\n===> params : {:?}", url_params);
                 for p in url_params {
                     vec_keys.push(p.1);
                 }
                 let response = set_data(&_req.state().pool, sql_query.to_string(), vec_keys).await;
-                                
+
                 let mut res = Response::new(200);
                 res.set_content_type("text/html");
-                res.set_body(Body::from_string(format!("<H1>{} Row updated !</H1>", response)));
+                res.set_body(Body::from_string(format!(
+                    "<H1>{} Row updated !</H1>",
+                    response
+                )));
                 Ok(res)
             });
 
-            app.at("/deletedata/:table")
+        app.at("/deletedata/:table")
             .get(|mut _req: Request<State>| async move {
                 // récupération des données de l'URL : pathname + nom table param + sql from config_action.json
                 let action = get_action(&_req, "GET/deletedata/".to_string()).await;
                 // convertir le String(....) en str avec : serde_json::Value::as_str(action.get("sql").unwrap())
-                let sql_query =action.get("sql").unwrap().as_str().unwrap();
-                let _body =_req.body_string().await?;
-                let url_params = _req.url().query().unwrap().split('&')
-                .filter_map(|s| {
-                    s.split_once('=')
-                        .and_then(|t| Some((decode(t.0.to_owned().as_str()).unwrap(), decode(t.1.to_owned().replace("+", " ").as_str()).unwrap())))
-                })
-                .collect::<Vec<_>>();
+                let sql_query = action.get("sql").unwrap().as_str().unwrap();
+                let _body = _req.body_string().await?;
+                let url_params = _req
+                    .url()
+                    .query()
+                    .unwrap()
+                    .split('&')
+                    .filter_map(|s| {
+                        s.split_once('=').and_then(|t| {
+                            Some((
+                                decode(t.0.to_owned().as_str()).unwrap(),
+                                decode(t.1.to_owned().replace("+", " ").as_str()).unwrap(),
+                            ))
+                        })
+                    })
+                    .collect::<Vec<_>>();
                 let mut vec_keys: Vec<String> = Vec::new();
                 println!("\n===> params : {:?}", url_params);
                 for p in url_params {
                     vec_keys.push(p.1);
                 }
                 let response = set_data(&_req.state().pool, sql_query.to_string(), vec_keys).await;
-                                
+
                 let mut res = Response::new(200);
                 res.set_content_type("text/html");
-                res.set_body(Body::from_string(format!("<H1>{} Row deleted !</H1>", response)));
+                res.set_body(Body::from_string(format!(
+                    "<H1>{} Row deleted !</H1>",
+                    response
+                )));
                 Ok(res)
             })
             .post(|mut _req: Request<State>| async move {
                 println!("\n===> req.body :dans post");
-                let body =_req.body_string().await?;
+                let body = _req.body_string().await?;
                 println!("\n===> req.body : {:?} \n===> req.body_json", body);
-                let url_params = body.split('&')
-                .filter_map(|s| {
-                    s.split_once('=')
-                        .and_then(|t| Some((decode(t.0.to_owned().as_str()).unwrap(), decode(t.1.to_owned().replace("+", " ").as_str()).unwrap())))
-                })
-                .collect::<Vec<_>>();
+                let url_params = body
+                    .split('&')
+                    .filter_map(|s| {
+                        s.split_once('=').and_then(|t| {
+                            Some((
+                                decode(t.0.to_owned().as_str()).unwrap(),
+                                decode(t.1.to_owned().replace("+", " ").as_str()).unwrap(),
+                            ))
+                        })
+                    })
+                    .collect::<Vec<_>>();
                 let mut vec_keys: Vec<String> = Vec::new();
                 println!("\n===> url_params : {:?}", url_params);
                 for p in url_params {
@@ -190,10 +268,13 @@ pub mod dynamic_router {
                 let action = get_action(&_req, "GET/deletedata/".to_string()).await;
                 let sql_query = action.get("sql").unwrap().as_str().unwrap();
                 let response = set_data(&_req.state().pool, sql_query.to_string(), vec_keys).await;
-                                
+
                 let mut res = Response::new(200);
                 res.set_content_type("text/html");
-                res.set_body(Body::from_string(format!("<H1>{} Row deleted !</H1>", response)));
+                res.set_body(Body::from_string(format!(
+                    "<H1>{} Row deleted !</H1>",
+                    response
+                )));
                 Ok(res)
             });
         app
