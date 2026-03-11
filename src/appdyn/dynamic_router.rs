@@ -15,13 +15,10 @@ pub mod dynamic_router {
     };
     use urlencoding::decode;
 
-    pub async fn manage_action<'a>(
-        app: &'a mut Server<State>,
-    ) -> &'a mut Server<appdyn::appdyn::State> {
+    pub async fn manage_action<'a>(app: &'a mut Server<State>, ) -> &'a mut Server<appdyn::appdyn::State> {
         /* ici on va découper les requêtes et récupérer les données qui arrive du client  */
         app.at("*").get(|mut _req: Request<State>| async move {
-            let path = _req.url().path();
-            println!("\n===> path : {:?}", path);
+            println!("\n===> path : {:?}", _req.url().path());
             let url_params = _req
                 .url()
                 .query()
