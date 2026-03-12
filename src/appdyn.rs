@@ -39,15 +39,15 @@ pub mod appdyn {
             // Parse the string into a dynamically-typed JSON structure.
             serde_json::from_str::<serde_json::value::Value>(&text).unwrap()
         };
-        // Variables accessibles depuis n'importe quel fonction de Tide. : Contexte.
+        // Variables accessibles depuis n'importe quelle fonction de Tide. : Contexte.
         let state = State {
             pool: conn.clone(),
             actions: config_actions,
         };
         // on prépare les donnée dans State et on appelle "manage_action" pour traiter la requête HTTP
         let mut app = tide::with_state(state);
-        
-        manage_action(&mut app).await; // Gestion de l'action dans le dynamic_router.rs et la fonction manage_action(&app)
+        // Gestion de l'action dans le dynamic_router.rs et la fonction manage_action(&app)
+        manage_action(&mut app).await; 
 
         app
     }
