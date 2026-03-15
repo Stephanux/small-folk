@@ -8,13 +8,8 @@ pub mod appdyn {
     use crate::appdyn::dynamic_router::dynamic_router::manage_action;
     use sqlx::mysql::MySqlPoolOptions;
     use tide::{Server};
+    use core::State;
     extern crate urlencoding;
-
-    #[derive(Clone, Debug)]
-    pub struct State {
-        pub pool: sqlx::Pool<sqlx::MySql>,
-        pub(crate) actions: serde_json::value::Value, //Arc<RwLock<HashMap<String, String>>>,
-    }
 
     #[async_std::main]
     pub async fn main() {

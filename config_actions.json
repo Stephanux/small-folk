@@ -4,6 +4,9 @@
 		"form_action": "",
 		"view": "error.hbs"
 	},
+	"GET/plugins/plugin_a": {
+		"plugin": "./target/debug/libplugin_a.so"
+	},
 	"GET/getdata/countries": {
 		"sql" : "select * from countries",
 		"view": "tableau_html.hbs"
